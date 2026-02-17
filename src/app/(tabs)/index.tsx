@@ -1,5 +1,7 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -16,47 +18,53 @@ import {
   SendIcon,
   UserIcon,
 } from '@/components/icons';
+import {
+  accountQueryKey,
+  dollarPriceQueryKey,
+  transactionsQueryKey,
+  useAccountBalance,
+  useDollarPrice,
+  useTransactions,
+} from '@/hooks/use-account-data';
 
 const BRAND_GREEN = '#16a34a';
 
 /** Single horizontal padding for header content, balance, buttons and cards. Change here to align everything. */
 const CONTENT_PADDING = 20;
 
-const transactions = [
-  {
-    id: '1',
-    name: 'De Deel',
-    date: '4 Jul 2023',
-    amountUsdc: '+ 1,000 USDc',
-    amountFiat: '+ 1,000 USD',
-    iconBg: '#1e3a5f',
-    iconLabel: 'deel',
-  },
-  {
-    id: '2',
-    name: 'Uber',
-    date: '28 Jun 2023',
-    amountUsdc: '- 2.55 USDc',
-    amountFiat: '- 45.56 MXN',
-    iconBg: '#000000',
-    iconLabel: 'Uber',
-  },
-];
-
 export default function AccountScreen() {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = useCallback(() => {
+  const { data: balance = 0 } = useAccountBalance();
+  const { data: transactions = [] } = useTransactions();
+  const { data: dollarPrice = null } = useDollarPrice();
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // Simulate refresh; replace with real data fetch
-    setTimeout(() => setRefreshing(false), 1200);
-  }, []);
+    try {
+      // TODO: sync from API and write to DB; depois invalidate
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: accountQueryKey }),
+        queryClient.refetchQueries({ queryKey: transactionsQueryKey }),
+        queryClient.refetchQueries({ queryKey: dollarPriceQueryKey }),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
 
   return (
     <View style={styles.container}>
       {/* Green strip behind scroll so pull-to-refresh area is green, not white */}
       <View style={styles.pullRefreshGreen} pointerEvents="none" />
+      {/* Overlay verde ao refreshar: esconde o spinner nativo (que no cold start fica no topo) e mostra só o nosso em posição fixa */}
+      {refreshing && (
+        <View style={styles.refreshOverlay} pointerEvents="none">
+          <ActivityIndicator size="large" color="#fff" style={styles.refreshSpinner} />
+        </View>
+      )}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 60 }]}
@@ -67,7 +75,7 @@ export default function AccountScreen() {
             onRefresh={onRefresh}
             tintColor="#fff"
             colors={['#fff']}
-            progressViewOffset={insets.top + 20}
+            progressViewOffset={9999}
           />
         }
       >
@@ -85,7 +93,9 @@ export default function AccountScreen() {
             </View>
 
             <View style={styles.heroSection}>
-              <Text style={styles.balanceAmount}>$1,051.33</Text>
+              <Text style={styles.balanceAmount}>
+                ${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
               <View style={styles.balanceBadge}>
                 <Text style={styles.balanceLabelText}>Balance in USDC</Text>
                 <Text style={styles.flag}>🇺🇸</Text>
@@ -143,11 +153,11 @@ export default function AccountScreen() {
               <ChartIcon size={28} color={BRAND_GREEN} />
             </View>
             <View style={styles.dollarBlock}>
-              <Text style={styles.dollarValue}>17.87 MXN</Text>
+              <Text style={styles.dollarValue}>{dollarPrice?.buy ?? '—'}</Text>
               <Text style={styles.dollarLabel}>Buy</Text>
             </View>
             <View style={styles.dollarBlock}>
-              <Text style={styles.dollarValue}>17.87 MXN</Text>
+              <Text style={styles.dollarValue}>{dollarPrice?.sell ?? '—'}</Text>
               <Text style={styles.dollarLabel}>Sell</Text>
             </View>
           </View>
@@ -178,6 +188,18 @@ const styles = StyleSheet.create({
     backgroundColor: BRAND_GREEN,
     zIndex: 0,
   },
+  refreshOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 72,
+    backgroundColor: BRAND_GREEN,
+    zIndex: 2,
+    paddingTop: 56,
+    alignItems: 'center',
+  },
+  refreshSpinner: {},
   contentContainer: {
     paddingHorizontal: CONTENT_PADDING,
   },
@@ -236,15 +258,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
+    alignSelf: 'stretch',
   },
   actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     backgroundColor: 'transparent',
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.5)',
