@@ -1,0 +1,15 @@
+---
+description: Padrão do projeto - gerenciador de pacotes
+globs: 
+alwaysApply: true
+---
+
+# Gerenciador de pacotes: Bun
+
+O padrão deste projeto é **bun**. Use sempre bun para:
+
+- Instalar dependências: `bun install`
+- Executar scripts: `bun run <script>` (ex.: `bun run start`, `bun run lint`)
+- Rodar binários/CLI: `bunx <comando>` (ex.: `bunx expo start`, `bunx bna-ui add button`)
+
+Não use npm, pnpm ou yarn nas instruções ou comandos sugeridos para este repositório.
