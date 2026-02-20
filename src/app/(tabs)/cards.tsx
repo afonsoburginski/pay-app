@@ -21,10 +21,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   DolarAppLogoIcon,
   DOLARAPP_WHITE,
-  HelpIcon,
   MastercardIcon,
-  UserIcon,
 } from '@/components/icons';
+import { TabScreenHeader, useDefaultHeaderSlots } from '@/components/tab-screen-header';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/theme/colors';
 
 const BRAND_GREEN = '#16a34a';
 const CARD_GREEN = '#1e9e4f'; // Slightly lighter than app green
@@ -44,17 +45,19 @@ const CARDS = [
 
 const CARD_FLIP_DURATION_MS = 180;
 
+type CardStyles = ReturnType<typeof createThemeStyles> & typeof staticCardStyles;
+
 /** Frente: DolarApp (topo); nome no canto inferior esquerdo; Mastercard à direita */
-const CardFront = memo(function CardFront() {
+const CardFront = memo(function CardFront({ s }: { s: CardStyles }) {
   return (
-    <View style={styles.face}>
-      <View style={styles.cardTopRow}>
+    <View style={s.face}>
+      <View style={s.cardTopRow}>
         <DolarAppLogoIcon width={26} height={20} color={DOLARAPP_WHITE} />
-        <Text style={styles.cardBrandName}>DolarApp</Text>
+        <Text style={s.cardBrandName}>DolarApp</Text>
       </View>
-      <View style={styles.cardMiddle} />
-      <View style={styles.cardBottomRow}>
-        <Text style={styles.cardHolderName}>{virtualCard.holder}</Text>
+      <View style={s.cardMiddle} />
+      <View style={s.cardBottomRow}>
+        <Text style={s.cardHolderName}>{virtualCard.holder}</Text>
         <MastercardIcon size={48} />
       </View>
     </View>
@@ -62,33 +65,33 @@ const CardFront = memo(function CardFront() {
 });
 
 /** Verso: outra face do cartão – só dados (faixa, número, validade, CVV, contato). Sem DolarApp. */
-const CardBack = memo(function CardBack() {
+const CardBack = memo(function CardBack({ s }: { s: CardStyles }) {
   return (
-    <View style={styles.faceBack}>
-      <View style={styles.backStripe} />
-      <View style={styles.backContent}>
-        <Text style={styles.backLabel}>Card number</Text>
-        <Text style={styles.backNumber}>{virtualCard.numberFull}</Text>
-        <View style={styles.backExpCvv}>
-          <Text style={styles.backLabel}>EXP {virtualCard.expiry}</Text>
-          <Text style={styles.backCvvLabel}>CVV {virtualCard.cvv}</Text>
+    <View style={s.faceBack}>
+      <View style={s.backStripe} />
+      <View style={s.backContent}>
+        <Text style={s.backLabel}>Card number</Text>
+        <Text style={s.backNumber}>{virtualCard.numberFull}</Text>
+        <View style={s.backExpCvv}>
+          <Text style={s.backLabel}>EXP {virtualCard.expiry}</Text>
+          <Text style={s.backCvvLabel}>CVV {virtualCard.cvv}</Text>
         </View>
       </View>
-      <Text style={styles.backContact}>+00 0000 0000 · www.dolarapp.com</Text>
+      <Text style={s.backContact}>+00 0000 0000 · www.dolarapp.com</Text>
     </View>
   );
 });
 
 /** Frente Business: DolarApp Business (topo esq.), nome e Mastercard */
-const CardFrontBusiness = memo(function CardFrontBusiness() {
+const CardFrontBusiness = memo(function CardFrontBusiness({ s }: { s: CardStyles }) {
   return (
-    <View style={styles.faceBusiness}>
-      <View style={styles.cardTopRowBusiness}>
-        <Text style={styles.cardBrandNameBusiness}>DolarApp Business</Text>
+    <View style={s.faceBusiness}>
+      <View style={s.cardTopRowBusiness}>
+        <Text style={s.cardBrandNameBusiness}>DolarApp Business</Text>
       </View>
-      <View style={styles.cardMiddle} />
-      <View style={styles.cardBottomRow}>
-        <Text style={styles.cardHolderName}>{virtualCard.holder}</Text>
+      <View style={s.cardMiddle} />
+      <View style={s.cardBottomRow}>
+        <Text style={s.cardHolderName}>{virtualCard.holder}</Text>
         <MastercardIcon size={48} />
       </View>
     </View>
@@ -96,19 +99,19 @@ const CardFrontBusiness = memo(function CardFrontBusiness() {
 });
 
 /** Verso Business: mesma estrutura, cor cinza escuro e faixa clara */
-const CardBackBusiness = memo(function CardBackBusiness() {
+const CardBackBusiness = memo(function CardBackBusiness({ s }: { s: CardStyles }) {
   return (
-    <View style={styles.faceBackBusiness}>
-      <View style={styles.backStripeBusiness} />
-      <View style={styles.backContent}>
-        <Text style={styles.backLabel}>Card number</Text>
-        <Text style={styles.backNumber}>{virtualCard.numberFull}</Text>
-        <View style={styles.backExpCvv}>
-          <Text style={styles.backLabel}>EXP {virtualCard.expiry}</Text>
-          <Text style={styles.backCvvLabel}>CVV {virtualCard.cvv}</Text>
+    <View style={s.faceBackBusiness}>
+      <View style={s.backStripeBusiness} />
+      <View style={s.backContent}>
+        <Text style={s.backLabel}>Card number</Text>
+        <Text style={s.backNumber}>{virtualCard.numberFull}</Text>
+        <View style={s.backExpCvv}>
+          <Text style={s.backLabel}>EXP {virtualCard.expiry}</Text>
+          <Text style={s.backCvvLabel}>CVV {virtualCard.cvv}</Text>
         </View>
       </View>
-      <Text style={styles.backContact}>+00 0000 0000 · www.dolarapp.com</Text>
+      <Text style={s.backContact}>+00 0000 0000 · www.dolarapp.com</Text>
     </View>
   );
 });
@@ -117,9 +120,10 @@ const CardBackBusiness = memo(function CardBackBusiness() {
 interface CardWithTransitionProps {
   showDetails: boolean;
   type: 'default' | 'business';
+  styles: CardStyles;
 }
 
-function CardWithTransition({ showDetails, type }: CardWithTransitionProps) {
+function CardWithTransition({ showDetails, type, styles: s }: CardWithTransitionProps) {
   const backVisible = useSharedValue(showDetails ? 1 : 0);
 
   useEffect(() => {
@@ -139,12 +143,12 @@ function CardWithTransition({ showDetails, type }: CardWithTransitionProps) {
   const isBusiness = type === 'business';
 
   return (
-    <View style={styles.cardFlipContainer}>
-      <Animated.View style={[styles.cardFaceLayer, frontAnimatedStyle]}>
-        {isBusiness ? <CardFrontBusiness /> : <CardFront />}
+    <View style={s.cardFlipContainer}>
+      <Animated.View style={[s.cardFaceLayer, frontAnimatedStyle]}>
+        {isBusiness ? <CardFrontBusiness s={s} /> : <CardFront s={s} />}
       </Animated.View>
-      <Animated.View style={[styles.cardFaceLayer, backAnimatedStyle]}>
-        {isBusiness ? <CardBackBusiness /> : <CardBack />}
+      <Animated.View style={[s.cardFaceLayer, backAnimatedStyle]}>
+        {isBusiness ? <CardBackBusiness s={s} /> : <CardBack s={s} />}
       </Animated.View>
     </View>
   );
@@ -154,15 +158,17 @@ function CardWithTransition({ showDetails, type }: CardWithTransitionProps) {
 interface CarouselCardItemProps {
   item: (typeof CARDS)[number];
   showDetails: boolean;
+  styles: CardStyles;
 }
 
 const CarouselCardItem = memo(function CarouselCardItem({
   item,
   showDetails,
+  styles: s,
 }: CarouselCardItemProps) {
   return (
-    <View style={[styles.carouselItem, carouselItemWidthStyle]}>
-      <CardWithTransition showDetails={showDetails} type={item.type} />
+    <View style={[s.carouselItem, carouselItemWidthStyle]}>
+      <CardWithTransition showDetails={showDetails} type={item.type} styles={s} />
     </View>
   );
 });
@@ -173,6 +179,9 @@ const carouselItemWidthStyle = { width: SCREEN_WIDTH };
 
 export default function CardsScreen() {
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const styles = useMemo(() => ({ ...staticCardStyles, ...createThemeStyles(colors) }), [colors]);
   const [detailsVisible, setDetailsVisible] = useState<boolean[]>([false, false]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentIndexRef = useRef(0);
@@ -225,9 +234,10 @@ export default function CardsScreen() {
       <CarouselCardItem
         item={item}
         showDetails={detailsVisible[index] ?? false}
+        styles={styles}
       />
     ),
-    [detailsVisible]
+    [detailsVisible, styles]
   );
 
   const onMomentumScrollEnd = useCallback(
@@ -250,10 +260,10 @@ export default function CardsScreen() {
 
   const switchTrackColor = useMemo(
     () => ({
-      false: '#e4e4e7',
+      false: colors.input,
       true: isBusiness ? 'rgba(74, 74, 74, 0.6)' : 'rgba(22, 163, 74, 0.5)',
     }),
-    [isBusiness]
+    [isBusiness, colors.input]
   );
 
   const switchThumbColor = useMemo(
@@ -262,8 +272,8 @@ export default function CardsScreen() {
         ? isBusiness
           ? CARD_BUSINESS
           : BRAND_GREEN
-        : '#f4f4f5',
-    [showDetailsCurrent, isBusiness]
+        : colors.secondary,
+    [showDetailsCurrent, isBusiness, colors.secondary]
   );
 
   const switcherHintText = useMemo(
@@ -274,31 +284,20 @@ export default function CardsScreen() {
     [showDetailsCurrent]
   );
 
+  const { leftSlot, rightSlot } = useDefaultHeaderSlots();
   const scrollContentStyle = useMemo(
     () => [styles.scrollContent, { paddingBottom: insets.bottom + 60 }],
-    [insets.bottom]
-  );
-
-  const headerPaddingStyle = useMemo(
-    () => ({ paddingTop: insets.top + 8 }),
-    [insets.top]
+    [insets.bottom, styles.scrollContent]
   );
 
   return (
     <View style={styles.container}>
-      {/* Green header */}
-      <View style={[styles.header, headerPaddingStyle]}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
-            <UserIcon size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Cards</Text>
-          <TouchableOpacity style={styles.headerIcon} activeOpacity={0.7}>
-            <HelpIcon size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.headerSubtitle}>Your virtual card</Text>
-      </View>
+      <TabScreenHeader
+        leftSlot={leftSlot}
+        title="Cards"
+        rightSlot={rightSlot}
+        subtitle="Your virtual card"
+      />
 
       <ScrollView
         style={styles.scroll}
@@ -362,76 +361,7 @@ export default function CardsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: BRAND_GREEN,
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  headerIcon: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  headerSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.9)',
-    textAlign: 'center',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-  },
-  carouselList: {
-    marginHorizontal: -16,
-    height: 224,
-  },
-  carouselContent: {
-    paddingVertical: 8,
-  },
-  carouselItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-  },
-  carouselIndicators: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 12,
-    marginBottom: 8,
-  },
-  carouselDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#d4d4d4',
-  },
-  carouselDotActive: {
-    backgroundColor: BRAND_GREEN,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
+const staticCardStyles = StyleSheet.create({
   cardWrapper: {
     marginBottom: 20,
     alignItems: 'center',
@@ -602,64 +532,112 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.75)',
     marginBottom: 4,
   },
-  switcherRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    marginBottom: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  switcherLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#18181b',
-  },
-  switcherHint: {
-    fontSize: 13,
-    color: '#71717a',
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-  footerCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  footerTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#000',
-    marginBottom: 6,
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#71717a',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  footerCta: {
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(22, 163, 74, 0.12)',
-    borderRadius: 10,
-  },
-  footerCtaText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: BRAND_GREEN,
-  },
 });
+
+function createThemeStyles(colors: typeof Colors.light) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.screenBackground,
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingHorizontal: 16,
+      paddingTop: 24,
+    },
+    carouselList: {
+      marginHorizontal: -16,
+      height: 224,
+    },
+    carouselContent: {
+      paddingVertical: 8,
+    },
+    carouselItem: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 16,
+    },
+    carouselIndicators: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 12,
+      marginBottom: 8,
+    },
+    carouselDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.input,
+    },
+    carouselDotActive: {
+      backgroundColor: BRAND_GREEN,
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+    },
+    switcherRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.card,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      borderRadius: 14,
+      marginBottom: 6,
+      shadowColor: colors.text,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    switcherLabel: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    switcherHint: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginBottom: 16,
+      paddingHorizontal: 4,
+    },
+    footerCard: {
+      backgroundColor: colors.card,
+      borderRadius: 16,
+      padding: 16,
+      shadowColor: colors.text,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    footerTitle: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 6,
+    },
+    footerText: {
+      fontSize: 14,
+      color: colors.textMuted,
+      lineHeight: 20,
+      marginBottom: 12,
+    },
+    footerCta: {
+      alignSelf: 'flex-start',
+      paddingVertical: 8,
+      paddingHorizontal: 16,
+      backgroundColor: 'rgba(22, 163, 74, 0.12)',
+      borderRadius: 10,
+    },
+    footerCtaText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: BRAND_GREEN,
+    },
+  });
+}

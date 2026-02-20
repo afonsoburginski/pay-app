@@ -3,4 +3,4 @@
  * Add project-wide utils here (e.g. formatCurrency, cn, storage).
  */
 
-export {};
+export { supabase } from './supabase';

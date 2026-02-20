@@ -36,6 +36,9 @@ const lightColors = {
   input: '#e4e4e7',
   ring: '#a1a1aa',
 
+  // Screen (page) background
+  screenBackground: '#f5f5f5',
+
   // Text colors
   text: '#000000',
   textMuted: '#71717a',
@@ -111,6 +114,9 @@ const darkColors = {
   border: '#38383A',
   input: 'rgba(255, 255, 255, 0.15)',
   ring: '#71717a',
+
+  // Screen (page) background
+  screenBackground: '#111111',
 
   // Text colors
   text: '#FFFFFF',

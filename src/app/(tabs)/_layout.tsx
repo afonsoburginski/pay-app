@@ -8,21 +8,25 @@ import {
   WalletIcon,
 } from '@/components/icons';
 import { HapticTab } from '@/components/ui/haptic-tab';
+import { useColorScheme as useAppColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/theme/colors';
 
 const TAB_GREEN = '#16a34a';
 const TAB_GRAY = '#71717a';
 
 export default function TabLayout() {
+  const colorScheme = useAppColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: TAB_GREEN,
-        tabBarInactiveTintColor: TAB_GRAY,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopColor: '#eee',
+          backgroundColor: colors.card,
+          borderTopColor: colors.border,
         },
         tabBarLabelStyle: {
           fontSize: 11,

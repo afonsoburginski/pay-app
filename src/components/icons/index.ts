@@ -14,11 +14,15 @@ export {
   DOLARAPP_GREEN,
   DOLARAPP_WHITE,
 } from './dolarapp-logo-icon';
+export { AppleIcon } from './apple-icon';
 export { CreditCardsIcon } from './credit-cards-icon';
+export { GoogleIcon } from './google-icon';
 export { HelpIcon } from './help-icon';
 export { MastercardIcon } from './mastercard-icon';
+export { MoonIcon } from './moon-icon';
 export { PlusIcon } from './plus-icon';
 export { SendIcon } from './send-icon';
+export { SunIcon } from './sun-icon';
 export { UserIcon } from './user-icon';
 export { UsdcIcon } from './usdc-icon';
 export { WalletIcon } from './wallet-icon';

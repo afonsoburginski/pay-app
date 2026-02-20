@@ -29,6 +29,12 @@
       "@morrowdigital/watermelondb-expo-plugin",
       "expo-router",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir acessar suas fotos para escolher a foto de perfil."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",

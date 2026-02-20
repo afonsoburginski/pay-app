@@ -1,5 +1,6 @@
+import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -18,6 +19,7 @@ import {
   SendIcon,
   UserIcon,
 } from '@/components/icons';
+import { TabScreenHeader, useDefaultHeaderSlots } from '@/components/tab-screen-header';
 import {
   accountQueryKey,
   dollarPriceQueryKey,
@@ -26,6 +28,9 @@ import {
   useDollarPrice,
   useTransactions,
 } from '@/hooks/use-account-data';
+import { useProfile } from '@/hooks/use-profile';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/theme/colors';
 
 const BRAND_GREEN = '#16a34a';
 
@@ -33,18 +38,25 @@ const BRAND_GREEN = '#16a34a';
 const CONTENT_PADDING = 20;
 
 export default function AccountScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
+  const colorScheme = useColorScheme() ?? 'light';
+  const colors = Colors[colorScheme];
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const { profile } = useProfile();
+  const { leftSlot, rightSlot } = useDefaultHeaderSlots();
   const { data: balance = 0 } = useAccountBalance();
   const { data: transactions = [] } = useTransactions();
   const { data: dollarPrice = null } = useDollarPrice();
 
+  const preferredCurrency = (profile?.preferred_currency ?? 'BRL').toUpperCase();
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // TODO: sync from API and write to DB; depois invalidate
       await Promise.all([
         queryClient.refetchQueries({ queryKey: accountQueryKey }),
         queryClient.refetchQueries({ queryKey: transactionsQueryKey }),
@@ -79,41 +91,46 @@ export default function AccountScreen() {
           />
         }
       >
-        {/* Green header - full width, no padding; content inside contentContainer */}
-        <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-          <View style={[styles.contentContainer]}>
-            <View style={styles.headerRow}>
-              <TouchableOpacity activeOpacity={0.7} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <UserIcon size={24} color="#fff" />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>Account</Text>
-              <TouchableOpacity activeOpacity={0.7} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <HelpIcon size={24} color="#fff" />
-              </TouchableOpacity>
+        {/* Green header – mesmo componente das outras tabs */}
+        <TabScreenHeader
+          leftSlot={leftSlot}
+          title="Account"
+          rightSlot={rightSlot}
+        >
+          <View style={styles.heroSection}>
+            <Text style={styles.balanceAmount}>
+              ${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+            <View style={styles.balanceBadge}>
+              <Text style={styles.balanceLabelText}>Balance in USDC</Text>
+              <Text style={styles.flag}>🇺🇸</Text>
             </View>
 
-            <View style={styles.heroSection}>
-              <Text style={styles.balanceAmount}>
-                ${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </Text>
-              <View style={styles.balanceBadge}>
-                <Text style={styles.balanceLabelText}>Balance in USDC</Text>
-                <Text style={styles.flag}>🇺🇸</Text>
-              </View>
-
-              <View style={styles.actionRow}>
-                <TouchableOpacity style={styles.actionButton} activeOpacity={0.8}>
-                  <PlusIcon size={22} color="#fff" />
-                  <Text style={styles.actionButtonText}>Reload</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionButton, styles.actionButtonPrimary]} activeOpacity={0.8}>
-                  <SendIcon size={20} color="#fff" focused={false} />
-                  <Text style={styles.actionButtonText}>Send</Text>
-                </TouchableOpacity>
-              </View>
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() =>
+                  router.push({
+                    pathname: '/receive',
+                    params: { openConvert: '1', currency: preferredCurrency },
+                  })
+                }
+                activeOpacity={0.8}
+              >
+                <PlusIcon size={22} color="#fff" />
+                <Text style={styles.actionButtonText}>Convert</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionButtonPrimary]}
+                onPress={() => router.push('/send')}
+                activeOpacity={0.8}
+              >
+                <SendIcon size={20} color="#fff" focused={false} />
+                <Text style={styles.actionButtonText}>Send</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </TabScreenHeader>
 
         {/* Cards inside same contentContainer so they align with header; wrapper overlaps green */}
         <View style={[styles.contentContainer, styles.firstCardOverlap, styles.cardsWrapper]}>
@@ -168,16 +185,11 @@ export default function AccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: typeof Colors.light) {
+  return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    backgroundColor: BRAND_GREEN,
-    paddingBottom: 56,
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
+    backgroundColor: colors.screenBackground,
   },
   pullRefreshGreen: {
     position: 'absolute',
@@ -205,17 +217,6 @@ const styles = StyleSheet.create({
   },
   cardsWrapper: {
     gap: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#fff',
   },
   heroSection: {
     alignItems: 'center',
@@ -295,10 +296,10 @@ const styles = StyleSheet.create({
     marginTop: -48,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   txIcon: {
     width: 40,
@@ -330,11 +331,11 @@ const styles = StyleSheet.create({
   txName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   txDate: {
     fontSize: 13,
-    color: '#71717a',
+    color: colors.textMuted,
     marginTop: 2,
   },
   txAmounts: {
@@ -343,14 +344,14 @@ const styles = StyleSheet.create({
   txAmountUsdc: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   txAmountPositive: {
     color: BRAND_GREEN,
   },
   txAmountFiat: {
     fontSize: 12,
-    color: '#71717a',
+    color: colors.textMuted,
     marginTop: 2,
   },
   transactionRowLast: {
@@ -369,7 +370,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#71717a',
+    color: colors.textMuted,
     letterSpacing: 0.5,
     marginBottom: 12,
   },
@@ -392,11 +393,12 @@ const styles = StyleSheet.create({
   dollarValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000',
+    color: colors.text,
   },
   dollarLabel: {
     fontSize: 13,
-    color: '#71717a',
+    color: colors.textMuted,
     marginTop: 2,
   },
-});
+  });
+}
